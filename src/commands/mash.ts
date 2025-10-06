@@ -66,7 +66,13 @@ export const command: Command = {
     const filePath = path.join(audioDir, matchedFile);
     const attachment = new AttachmentBuilder(filePath);
 
-    const songName = matchedFile.replace('mash-', '').replace('.mp3', '').replace(/-/g, ' ');
+    // Convert filename to proper title case
+    const songName = matchedFile
+      .replace('mash-', '')
+      .replace('.mp3', '')
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
 
     await interaction.reply({
       content: `🎃 **Monster Mash: ${songName}** 🎃`,
@@ -90,7 +96,12 @@ export async function handleAutocomplete(interaction: any) {
   const mp3Files = files.filter(file => file.endsWith('.mp3') && file.startsWith('mash-'));
 
   const choices = mp3Files.map(file => {
-    const name = file.replace('mash-', '').replace('.mp3', '').replace(/-/g, ' ');
+    const name = file
+      .replace('mash-', '')
+      .replace('.mp3', '')
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
     return { name, value: name };
   });
 
