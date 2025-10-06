@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, CommandInteraction, AttachmentBuilder } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, AttachmentBuilder } from 'discord.js';
 import { Command } from '../types/Command.js';
 import fs from 'fs';
 import path from 'path';
@@ -19,8 +19,8 @@ export const command: Command = {
         .setAutocomplete(true)
     ),
 
-  async execute(interaction: CommandInteraction) {
-    const songQuery = interaction.options.get('song')?.value as string;
+  async execute(interaction: any) {
+    const songQuery = interaction.options.getString('song');
 
     if (!songQuery) {
       await interaction.reply({ content: 'Please provide a song name!', ephemeral: true });
