@@ -1,4 +1,4 @@
-import { Client, Collection, Events, GatewayIntentBits } from 'discord.js';
+import { Client, Collection, Events, GatewayIntentBits, REST, Routes } from 'discord.js';
 import { config } from 'dotenv';
 import fs from 'fs';
 import path from 'path';
@@ -24,6 +24,8 @@ client.commands = new Collection();
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.ts') || file.endsWith('.js'));
 
+const commands = [];
+
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file);
   const commandModule = await import(`file://${filePath}`);
@@ -31,15 +33,55 @@ for (const file of commandFiles) {
 
   if ('data' in command && 'execute' in command) {
     client.commands.set(command.data.name, command);
+    commands.push(command.data.toJSON());
     console.log(`✅ Loaded command: ${command.data.name}`);
   } else {
     console.warn(`⚠️  Command at ${filePath} is missing required "data" or "execute" property.`);
   }
 }
 
+// Deploy commands function
+async function deployCommands() {
+  const token = process.env.DISCORD_TOKEN;
+  const clientId = process.env.CLIENT_ID;
+  const guildId = process.env.GUILD_ID;
+
+  if (!token || !clientId) {
+    console.error('❌ Missing DISCORD_TOKEN or CLIENT_ID');
+    return;
+  }
+
+  const rest = new REST().setToken(token);
+
+  try {
+    console.log(`🔄 Deploying ${commands.length} slash commands...`);
+
+    if (guildId) {
+      // Guild-specific deployment (instant)
+      await rest.put(
+        Routes.applicationGuildCommands(clientId, guildId),
+        { body: commands }
+      );
+      console.log(`✅ Successfully deployed ${commands.length} guild commands!`);
+    } else {
+      // Global deployment (takes up to 1 hour)
+      await rest.put(
+        Routes.applicationCommands(clientId),
+        { body: commands }
+      );
+      console.log(`✅ Successfully deployed ${commands.length} global commands!`);
+    }
+  } catch (error) {
+    console.error('❌ Error deploying commands:', error);
+  }
+}
+
 // Ready event
-client.once(Events.ClientReady, (readyClient) => {
+client.once(Events.ClientReady, async (readyClient) => {
   console.log(`🎃 MonsterMasher is ready! Logged in as ${readyClient.user.tag}`);
+
+  // Auto-deploy commands on startup
+  await deployCommands();
 });
 
 // Interaction handler
